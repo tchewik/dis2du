@@ -21,6 +21,10 @@ def correct_nuclearity(relation, nuclearity):
     return nuclearity
 
 
+def bracketize_text(text):
+    return text.replace('-RB-', ')').replace('-LB-', '(').replace('##### ', '\n')
+
+
 def datastructure2isanlpdu(tree):
     global id
     id += 1
@@ -34,28 +38,28 @@ def datastructure2isanlpdu(tree):
             edu_left = DiscourseUnit(
                 id=tree.lnode.nucedu,
                 relation='elementary',
-                text=tree.lnode.text
+                text=bracketize_text(tree.lnode.text)
             )
             if tree.lnode.relation != 'span':
                 new_relation = tree.lnode.relation
                 new_order = find_simple_nuclearity(tree.lnode, tree.rnode)
-                new_text = tree.text
+                new_text = bracketize_text(tree.text)
 
         if tree.rnode.nucedu:
             edu_right = DiscourseUnit(
                 id=tree.rnode.nucedu,
                 relation='elementary',
-                text=tree.rnode.text
+                text=bracketize_text(tree.rnode.text)
             )
             if not new_relation and tree.rnode.relation != 'span':
                 new_relation = tree.rnode.relation
                 new_order = find_simple_nuclearity(tree.lnode, tree.rnode)
-                new_text = tree.text
+                new_text = bracketize_text(tree.text)
 
         if not new_relation:
             new_relation = tree.relation
             new_order = tree.form
-            new_text = tree.text
+            new_text = bracketize_text(tree.text)
 
             if new_order:
                 if new_order == 'NS' and tree.rnode:
@@ -120,7 +124,7 @@ def datastructure2isanlpdu(tree):
         new_unit = DiscourseUnit(
             id=tree.nucedu or id,
             relation='elementary',
-            text=tree.text
+            text=bracketize_text(tree.text)
         )
 
     new_unit.nuclearity = correct_nuclearity(new_unit.relation, new_unit.nuclearity)
@@ -145,23 +149,4 @@ def split_single_pseudounit(tree):
 def convert2isanlp(rst):
     global id
     id = rst.tree.eduspan[-1]  # number of edus in tree
-
-    trees = [rst.tree]
-    last_shape = 0
-    while len(trees) != last_shape:
-        last_shape = len(trees)
-        new_trees = []
-        for unit in trees:
-            new_trees += split_single_pseudorst(unit)
-        trees = new_trees
-
-    res = [datastructure2isanlpdu(tree) for tree in trees]
-    last_shape = 0
-    while len(res) != last_shape:
-        last_shape = len(res)
-        new_res = []
-        for unit in res:
-            new_res += split_single_pseudounit(unit)
-        res = new_res
-
-    return res
+    return datastructure2isanlpdu(rst.tree)
