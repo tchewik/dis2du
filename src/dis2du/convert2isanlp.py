@@ -77,6 +77,8 @@ def datastructure2isanlpdu(tree):
 
         if tree.lnode.nucedu and tree.rnode.nucedu:
             # Left node is EDU & right node is EDU
+            if not new_relation:
+                print(1)
 
             new_unit = DiscourseUnit(
                 id=id,
@@ -88,6 +90,8 @@ def datastructure2isanlpdu(tree):
             )
 
         elif tree.lnode.nucedu:
+            if not new_relation:
+                print(2)
             # Left node is EDU & right node is not EDU
             new_unit = DiscourseUnit(
                 id=id,
@@ -99,6 +103,8 @@ def datastructure2isanlpdu(tree):
             )
 
         elif tree.rnode.nucedu:
+            if not new_relation:
+                print(3)
             # Left node is not EDU & right node is EDU
             new_unit = DiscourseUnit(
                 id=id,
@@ -111,14 +117,26 @@ def datastructure2isanlpdu(tree):
 
         else:
             # Left node is not EDU & right node is not EDU
-            new_unit = DiscourseUnit(
-                id=id,
-                relation=new_relation,
-                nuclearity=new_order,
-                left=datastructure2isanlpdu(tree.lnode),
-                right=datastructure2isanlpdu(tree.rnode),
-                text=new_text
-            )
+            if new_relation:
+                new_unit = DiscourseUnit(
+                    id=id,
+                    relation=new_relation,
+                    nuclearity=new_order,
+                    left=datastructure2isanlpdu(tree.lnode),
+                    right=datastructure2isanlpdu(tree.rnode),
+                    text=new_text
+                )
+            else:
+                # No relation defined for (assuming) root node of tree
+                new_unit = DiscourseUnit(
+                    id=id,
+                    relation=tree.lnode.relation,
+                    nuclearity=new_order,
+                    left=datastructure2isanlpdu(tree.lnode),
+                    right=datastructure2isanlpdu(tree.rnode),
+                    text=new_text
+                )
+
 
     else:
         new_unit = DiscourseUnit(
