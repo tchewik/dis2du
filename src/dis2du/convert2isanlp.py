@@ -29,12 +29,26 @@ def datastructure2isanlpdu(tree):
     global id
     id += 1
 
+    cur_string = '--------------------------'
+
     if tree.lnode:
         new_relation = ''
         new_order = ''
         new_text = ''
 
+        if tree.text.startswith(cur_string):
+            print(vars(tree))
+            print(vars(tree.lnode))
+            print(vars(tree.rnode))
+
+
         if tree.lnode.nucedu:
+            # Left node is EDU
+
+            if tree.text.startswith(cur_string):
+                print('lnode.nucedu !')
+                print('---')
+
             edu_left = DiscourseUnit(
                 id=tree.lnode.nucedu,
                 relation='elementary',
@@ -44,27 +58,66 @@ def datastructure2isanlpdu(tree):
                 new_relation = tree.lnode.relation
                 new_order = find_simple_nuclearity(tree.lnode, tree.rnode)
                 new_text = bracketize_text(tree.text)
+            else:
+                new_relation = tree.rnode.relation
+                new_order = find_simple_nuclearity(tree.lnode, tree.rnode)
+                new_text = bracketize_text(tree.text)
 
         if tree.rnode.nucedu:
+            # Right node is EDU
+
+            if tree.text.startswith(cur_string):
+                print('rnode.nucedu !')
+                print('---')
+
             edu_right = DiscourseUnit(
                 id=tree.rnode.nucedu,
                 relation='elementary',
                 text=bracketize_text(tree.rnode.text)
             )
-            if not new_relation and tree.rnode.relation != 'span':
-                new_relation = tree.rnode.relation
-                new_order = find_simple_nuclearity(tree.lnode, tree.rnode)
-                new_text = bracketize_text(tree.text)
+
+            if not new_relation:
+                if tree.rnode.relation != 'span':
+                    new_relation = tree.rnode.relation
+                    new_order = find_simple_nuclearity(tree.lnode, tree.rnode)
+                    new_text = bracketize_text(tree.text)
+
+                else:
+                    new_text = bracketize_text(tree.text)
+                    new_order = find_simple_nuclearity(tree.lnode, tree.rnode)
+                    new_relation = tree.lnode.relation
 
         if not new_relation:
-            new_relation = tree.relation
-            new_order = tree.form
+            if tree.text.startswith(cur_string):
+                print('not new_relation !')
+                print('---')
+
+            if (tree.relation == 'span' or tree.relation == 'virtual-root') and tree.pnode and tree.pnode.relation != 'span':
+                if False:
+                    new_relation = tree.pnode.relation
+                else:
+                    if tree.lnode and tree.lnode.relation != 'span':
+                        new_relation = tree.lnode.relation
+
+                    elif tree.rnode:
+                        new_relation = tree.rnode.relation
+
+                new_order = tree.form
+
+            else:
+                if tree.form == 'NN' and tree.rnode:
+                    new_relation = tree.rnode.relation
+                    new_order = 'NN'
+                else:
+                    new_relation = tree.relation
+                    new_order = tree.form
+
             new_text = bracketize_text(tree.text)
 
             if new_order:
-                if new_order == 'NS' and tree.rnode:
+                if new_order == 'NS' and tree.rnode and tree.rnode.relation != 'span':
                     new_relation = tree.rnode.relation
-                elif new_order == 'SN' and tree.lnode:
+                elif new_order == 'SN' and tree.lnode and tree.lnode.relation != 'span':
                     new_relation = tree.lnode.relation
 
         if new_relation == 'span' or new_relation == 'virtual-root':
@@ -73,12 +126,26 @@ def datastructure2isanlpdu(tree):
             elif new_order == 'SN':
                 new_relation = tree.lnode.relation
             elif new_order == 'NN':
-                new_relation = tree.lnode.relation
+                if tree.lnode.relation != 'span':
+                    new_relation = tree.lnode.relation
+                    new_order = tree.lnode.form
+                else:
+                    new_relation = tree.rnode.relation
+                    new_order = tree.rnode.form
 
         if tree.lnode.nucedu and tree.rnode.nucedu:
             # Left node is EDU & right node is EDU
-            if not new_relation:
-                print(1)
+
+            if tree.lnode.relation != 'span':
+                new_relation = tree.lnode.relation
+                new_order = tree.lnode.form
+                if not new_order:
+                    new_order = tree.form
+            else:
+                new_relation = tree.rnode.relation
+                new_order = tree.rnode.form
+                if not new_order:
+                    new_order = tree.form
 
             new_unit = DiscourseUnit(
                 id=id,
@@ -89,9 +156,7 @@ def datastructure2isanlpdu(tree):
                 text=new_text
             )
 
-        elif tree.lnode.nucedu:
-            if not new_relation:
-                print(2)
+        elif tree.lnode.nucedu and not tree.rnode.nucedu:
             # Left node is EDU & right node is not EDU
             new_unit = DiscourseUnit(
                 id=id,
@@ -102,9 +167,7 @@ def datastructure2isanlpdu(tree):
                 text=new_text
             )
 
-        elif tree.rnode.nucedu:
-            if not new_relation:
-                print(3)
+        elif tree.rnode.nucedu and not tree.lnode.nucedu:
             # Left node is not EDU & right node is EDU
             new_unit = DiscourseUnit(
                 id=id,
